@@ -1,0 +1,100 @@
+# ============================================
+# Environment Variables / Secrets
+# ============================================
+
+.env
+.env.*
+!.env.example
+
+# ============================================
+# Python / FastAPI
+# ============================================
+
+__pycache__/
+*.py[cod]
+*$py.class
+
+venv/
+.venv/
+env/
+ENV/
+
+# Python testing / tooling
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# ============================================
+# React / Node / Vite
+# ============================================
+
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# ============================================
+# Logs
+# ============================================
+
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ============================================
+# Generated Test / Build Output
+# ============================================
+
+backend/test_out.txt
+backend/test_out2.txt
+backend/test_out3.txt
+backend/test_full_out.txt
+backend/test_pg_out.txt
+backend/test_pg_out2.txt
+backend/frontend_build_out.txt
+
+# ============================================
+# Local Databases
+# ============================================
+
+*.db
+*.sqlite
+*.sqlite3
+
+# ============================================
+# IDE / Editor
+# ============================================
+
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ============================================
+# Operating System Files
+# ============================================
+
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ============================================
+# Temporary / Generated Files
+# ============================================
+
+*.tmp
+*.temp
+*.bak
+*.cache
