@@ -32,72 +32,76 @@ const CreateIncident = () => {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Report Incident</h1>
-        <p className="text-zinc-400 mt-1">Provide details about the production incident.</p>
+        <h1 className="text-3xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-slate-100 via-slate-200 to-emerald-400">
+          Report Incident
+        </h1>
+        <p className="text-sm font-mono text-slate-400 mt-1">
+          Provide initial telemetry & context for the AI investigation agent.
+        </p>
       </div>
 
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6 shadow-sm">
+      <div className="rounded-2xl border border-matrix-border bg-matrix-card/90 p-8 shadow-sm backdrop-blur">
         {error && (
-          <div className="mb-6 rounded-md bg-red-500/10 p-4 text-sm text-red-500">
+          <div className="mb-6 rounded-xl border border-rose-500/30 bg-rose-950/20 p-4 text-sm font-mono text-rose-400">
             {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
-            <label htmlFor="title" className="text-sm font-medium text-zinc-300">Title</label>
+            <label htmlFor="title" className="text-sm font-medium text-slate-300">Incident Title</label>
             <input
               id="title"
               required
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full rounded-lg border border-matrix-border bg-matrix-surface px-4 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/40 transition-colors"
               placeholder="e.g. Login requests returning HTTP 500"
             />
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="description" className="text-sm font-medium text-zinc-300">Description</label>
+            <label htmlFor="description" className="text-sm font-medium text-slate-300">Description & Observations</label>
             <textarea
               id="description"
               required
               rows={4}
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              placeholder="Detailed description of the issue, affected services, and impact."
+              className="w-full rounded-lg border border-matrix-border bg-matrix-surface px-4 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/40 transition-colors font-sans"
+              placeholder="Detailed description of the issue, symptoms, affected services, and runtime impact."
             />
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="severity" className="text-sm font-medium text-zinc-300">Severity</label>
+            <label htmlFor="severity" className="text-sm font-medium text-slate-300">Severity Level</label>
             <select
               id="severity"
               value={formData.severity}
               onChange={(e) => setFormData({ ...formData, severity: e.target.value as IncidentSeverity })}
-              className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full rounded-lg border border-matrix-border bg-matrix-surface px-4 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/40 transition-colors"
             >
-              <option value="LOW">Low</option>
-              <option value="MEDIUM">Medium</option>
-              <option value="HIGH">High</option>
-              <option value="CRITICAL">Critical</option>
+              <option value="LOW" className="bg-matrix-surface text-slate-100">Low - Minor impact</option>
+              <option value="MEDIUM" className="bg-matrix-surface text-slate-100">Medium - Degraded service</option>
+              <option value="HIGH" className="bg-matrix-surface text-slate-100">High - Critical workflow impacted</option>
+              <option value="CRITICAL" className="bg-matrix-surface text-slate-100">Critical - Total system outage</option>
             </select>
           </div>
 
-          <div className="pt-4 flex justify-end gap-3">
+          <div className="pt-4 flex justify-end gap-3 border-t border-matrix-border">
             <button
               type="button"
               onClick={() => navigate(-1)}
-              className="rounded-md border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-300 hover:bg-zinc-800"
+              className="rounded-lg border border-matrix-border bg-matrix-surface px-4 py-2 text-sm font-medium text-slate-300 hover:bg-matrix-cardHover transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-zinc-950 disabled:opacity-50"
+              className="rounded-lg bg-gradient-to-r from-emerald-500 to-teal-500 px-6 py-2 text-sm font-semibold text-black shadow-matrix-glow hover:from-emerald-400 hover:to-teal-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-matrix-bg disabled:opacity-50 transition-all duration-200"
             >
-              {loading ? 'Creating...' : 'Create Incident'}
+              {loading ? 'Initializing Agent...' : 'Create Incident'}
             </button>
           </div>
         </form>

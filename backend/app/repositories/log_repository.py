@@ -39,7 +39,7 @@ class LogRepository:
         offset: int = 0
     ) -> Tuple[int, List[LogEntry]]:
         
-        stmt = select(LogEntry).where(LogEntry.incident_id == incident_id)
+        stmt = select(LogEntry).where(or_(LogEntry.incident_id == incident_id, LogEntry.incident_id.is_(None)))
         
         if query:
             # Simple case-insensitive search in message for Phase 3

@@ -75,6 +75,8 @@ class Hypothesis(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
     investigation_run = orm_relationship("InvestigationRun", backref=backref("hypotheses", cascade="all, delete-orphan"))
+    evidence_mappings = orm_relationship("HypothesisEvidence", back_populates="hypothesis", cascade="all, delete-orphan")
+    verifications = orm_relationship("HypothesisVerification", back_populates="hypothesis", cascade="all, delete-orphan")
 
 class HypothesisEvidence(Base):
     __tablename__ = "hypothesis_evidence"
@@ -91,7 +93,7 @@ class HypothesisEvidence(Base):
     
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
-    hypothesis = orm_relationship("Hypothesis", backref=backref("evidence_mappings", cascade="all, delete-orphan"))
+    hypothesis = orm_relationship("Hypothesis", back_populates="evidence_mappings")
     evidence = orm_relationship("Evidence", backref=backref("hypothesis_mappings", cascade="all, delete-orphan"))
 
 class HypothesisVerification(Base):
@@ -117,7 +119,7 @@ class HypothesisVerification(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
     
-    hypothesis = orm_relationship("Hypothesis", backref=backref("verifications", cascade="all, delete-orphan"))
+    hypothesis = orm_relationship("Hypothesis", back_populates="verifications")
     investigation_run = orm_relationship("InvestigationRun", backref=backref("verifications", cascade="all, delete-orphan"))
     
 class VerificationStep(Base):

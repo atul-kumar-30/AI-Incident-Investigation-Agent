@@ -38,7 +38,7 @@ def select_hypothesis_for_verification(state: InvestigationState) -> Dict[str, A
             selected_h = None
         else:
             for h in sorted_hypotheses:
-                hid = h.get("temp_id") or h.get("id")
+                hid = h.get("id") or h.get("temp_id")
                 status = h.get("status", HypothesisStatus.PROPOSED.value)
                 if hid not in completed and status == HypothesisStatus.PROPOSED.value:
                     selected_h = h
@@ -51,7 +51,7 @@ def select_hypothesis_for_verification(state: InvestigationState) -> Dict[str, A
             "messages": [SystemMessage(content="Verification phase complete.")]
         }
         
-    hid = selected_h.get("temp_id") or selected_h.get("id")
+    hid = selected_h.get("id") or selected_h.get("temp_id")
     
     # Initialize a clean verification state
     verification_state: VerificationState = {

@@ -21,8 +21,10 @@ from app.tools.incident_context import IncidentContextAnalyzer
 from app.agents.investigation.tools.log_search import LogSearchTool
 from app.agents.investigation.tools.code_search import CodeSearchTool
 from app.agents.investigation.tools.recent_changes import RecentChangesTool
+from app.agents.investigation.tools.docs_search import DocsSearchTool
 
 registry.register(IncidentContextAnalyzer())
 registry.register(LogSearchTool())
 registry.register(CodeSearchTool())
 registry.register(RecentChangesTool())
+registry.register(DocsSearchTool())

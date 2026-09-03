@@ -17,4 +17,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY . .
 
+RUN mkdir -p /app/demo_repositories
+
 # Command is set in docker-compose

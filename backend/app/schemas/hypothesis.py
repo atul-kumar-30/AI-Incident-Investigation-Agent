@@ -1,8 +1,30 @@
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel
 from datetime import datetime
-from app.models.hypothesis import HypothesisCategory, HypothesisStatus, EvidenceRelationshipType, EvidenceStrength
+from app.models.hypothesis import (
+    HypothesisCategory, HypothesisStatus, EvidenceRelationshipType, 
+    EvidenceStrength, HypothesisVerificationStatus
+)
 from app.schemas.investigation import EvidenceResponse
+
+class HypothesisVerificationResponse(BaseModel):
+    id: str
+    hypothesis_id: str
+    investigation_run_id: str
+    status: HypothesisVerificationStatus
+    verification_objective: Optional[str] = None
+    initial_score: Optional[float] = None
+    final_score: Optional[float] = None
+    support_delta: float = 0.0
+    contradiction_delta: float = 0.0
+    summary: Optional[str] = None
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
 
 class HypothesisEvidenceResponse(BaseModel):
     id: str
@@ -37,6 +59,7 @@ class HypothesisResponse(BaseModel):
     
     # We can include counts or the actual evidence
     evidence_mappings: Optional[List[HypothesisEvidenceResponse]] = []
+    verifications: Optional[List[HypothesisVerificationResponse]] = []
     
     class Config:
         from_attributes = True

@@ -60,8 +60,36 @@ async def list_documents(db: AsyncSession = Depends(get_db)):
     docs = result.scalars().all()
     return [{"id": d.id, "title": d.title, "type": d.document_type, "status": d.ingestion_status, "created_at": d.created_at} for d in docs]
 
+@router.get("/{document_id}")
+async def get_document(document_id: str, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(
+        select(Document).options(selectinload(Document.chunks)).filter_by(id=document_id)
+    )
+    doc = result.scalars().first()
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    sorted_chunks = sorted(doc.chunks, key=lambda c: c.chunk_index)
+    return {
+        "id": doc.id,
+        "title": doc.title,
+        "type": doc.document_type,
+        "status": doc.ingestion_status,
+        "created_at": doc.created_at,
+        "chunks": [
+            {
+                "id": c.id,
+                "chunk_index": c.chunk_index,
+                "section_title": c.section_title,
+                "content": c.content,
+                "page_number": c.page_number
+            }
+            for c in sorted_chunks
+        ]
+    }
+
 @router.post("/demo")
 async def ingest_demo_documents(db: AsyncSession = Depends(get_db)):
     """Seed database with canonical demo runbooks for Phase 5."""
     await document_service.ingest_demo_documents(db)
     return {"status": "ok"}
+

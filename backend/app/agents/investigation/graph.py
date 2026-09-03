@@ -15,6 +15,11 @@ from app.agents.investigation.nodes.verification_planner import verification_pla
 from app.agents.investigation.nodes.evaluate_verification_evidence import evaluate_verification_evidence
 from app.agents.investigation.nodes.finalize_verification import finalize_verification
 
+def route_start(state: InvestigationState) -> str:
+    if state.get("current_step") == "select_hypothesis_for_verification":
+        return "select_hypothesis_for_verification"
+    return "initialize"
+
 def route_after_record_evidence(state: InvestigationState) -> str:
     verification = state.get("verification", {})
     if verification and verification.get("status") == "RUNNING":
@@ -43,7 +48,14 @@ def create_investigation_graph():
     workflow.add_node("finalize", finalize)
 
     # Add edges
-    workflow.add_edge(START, "initialize")
+    workflow.add_conditional_edges(
+        START,
+        route_start,
+        {
+            "initialize": "initialize",
+            "select_hypothesis_for_verification": "select_hypothesis_for_verification"
+        }
+    )
     workflow.add_edge("initialize", "planner")
     
     # Conditional routing from planner
@@ -97,7 +109,7 @@ def create_investigation_graph():
     )
     
     workflow.add_edge("evaluate_verification_evidence", "verification_planner")
-    workflow.add_edge("finalize_verification", "select_hypothesis_for_verification")
+    workflow.add_edge("finalize_verification", "rank_hypotheses")
     
     workflow.add_edge("finalize", END)
 

@@ -4,7 +4,7 @@ import { incidentService } from '../services/incidentService';
 import { investigationService } from '../services/investigationService';
 import type { Incident, IncidentStatus, InvestigationRun } from '../types';
 import { cn } from '../utils';
-import { Terminal, Clock, Server, ArrowLeft, Trash2 } from 'lucide-react';
+import { Terminal, Clock, Server, ArrowLeft, Trash2, Play } from 'lucide-react';
 import InvestigationPanel from '../components/InvestigationPanel';
 import LogsTab from '../components/LogsTab';
 import RepositoriesTab from '../components/RepositoriesTab';
@@ -44,6 +44,7 @@ const IncidentDetail = () => {
     try {
       const run = await investigationService.startInvestigation(id);
       setInvestigation(run);
+      setIncident(prev => prev ? { ...prev, status: 'INVESTIGATING' } : prev);
     } catch (err: any) {
       console.error(err);
       setError(`Failed to start investigation: ${err.message}`);
@@ -77,154 +78,175 @@ const IncidentDetail = () => {
   };
 
   if (loading) {
-    return <div className="flex h-64 items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-500 border-t-transparent"></div></div>;
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <div className="relative flex items-center justify-center">
+          <div className="h-10 w-10 animate-spin rounded-full border-2 border-emerald-500/20 border-t-emerald-400"></div>
+          <div className="absolute h-4 w-4 rounded-full bg-emerald-500/30 animate-ping"></div>
+        </div>
+      </div>
+    );
   }
 
   if (error || !incident) {
-    return <div className="rounded-md bg-red-500/10 p-4 text-red-500">{error}</div>;
+    return (
+      <div className="rounded-xl border border-rose-500/30 bg-rose-950/20 p-4 text-rose-400 font-mono text-sm">
+        {error}
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
-      <button onClick={() => navigate(-1)} className="flex items-center text-sm text-zinc-400 hover:text-zinc-100 transition-colors">
-        <ArrowLeft className="mr-1 h-4 w-4" /> Back
+    <div className="space-y-6 max-w-6xl mx-auto">
+      <button 
+        onClick={() => navigate(-1)} 
+        className="inline-flex items-center text-xs font-mono text-slate-400 hover:text-emerald-400 transition-colors"
+      >
+        <ArrowLeft className="mr-1.5 h-3.5 w-3.5" /> Return to Incidents
       </button>
 
       <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-zinc-100">{incident.title}</h1>
-          <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-zinc-400">
-            <span className="flex items-center gap-1"><Clock className="h-4 w-4" /> Created: {new Date(incident.created_at).toLocaleString()}</span>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-extrabold tracking-tight text-slate-100">{incident.title}</h1>
+            <span className={cn(
+              "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-mono font-medium border",
+              incident.severity === 'CRITICAL' ? 'bg-rose-500/15 text-rose-400 border-rose-500/30' :
+              incident.severity === 'HIGH' ? 'bg-amber-500/15 text-amber-400 border-amber-500/30' :
+              'bg-slate-500/15 text-slate-400 border-slate-500/30'
+            )}>
+              {incident.severity}
+            </span>
+          </div>
+          <div className="mt-2 flex flex-wrap items-center gap-3 text-xs font-mono text-slate-400">
+            <span className="flex items-center gap-1.5"><Clock className="h-3.5 w-3.5 text-slate-500" /> Created: {new Date(incident.created_at).toLocaleString()}</span>
             <span>•</span>
-            <span className="flex items-center gap-1"><Server className="h-4 w-4" /> Source: {incident.source}</span>
+            <span className="flex items-center gap-1.5"><Server className="h-3.5 w-3.5 text-slate-500" /> Source: {incident.source}</span>
           </div>
         </div>
         <div className="flex items-center gap-3">
           <button 
             onClick={handleStartInvestigation}
             disabled={investigating || investigation !== null}
-            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium rounded-md shadow-sm transition-colors"
+            className={cn(
+              "px-4 py-2 text-sm font-semibold rounded-lg shadow-matrix-glow transition-all flex items-center gap-2",
+              investigation
+                ? "bg-emerald-950/40 text-emerald-400 border border-emerald-500/40 cursor-default"
+                : investigating
+                ? "bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse"
+                : "bg-gradient-to-r from-emerald-500 to-teal-500 text-black hover:from-emerald-400 hover:to-teal-400"
+            )}
           >
-            {investigating ? 'Starting...' : investigation ? 'Investigating' : 'Start Investigation'}
+            <Play className="h-4 w-4" />
+            {investigating ? 'Running AI Agent...' : investigation ? 'Investigation Active' : 'Start Investigation'}
           </button>
           <select 
             value={incident.status}
             onChange={(e) => handleStatusChange(e.target.value as IncidentStatus)}
-            className="rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="rounded-lg border border-matrix-border bg-matrix-surface px-3 py-2 text-xs font-mono text-slate-200 focus:outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/40"
           >
-            <option value="OPEN">Open</option>
-            <option value="INVESTIGATING">Investigating</option>
-            <option value="RESOLVED">Resolved</option>
-            <option value="FAILED">Failed</option>
+            <option value="OPEN" className="bg-matrix-surface">OPEN</option>
+            <option value="INVESTIGATING" className="bg-matrix-surface">INVESTIGATING</option>
+            <option value="RESOLVED" className="bg-matrix-surface">RESOLVED</option>
+            <option value="FAILED" className="bg-matrix-surface">FAILED</option>
           </select>
-          <span className={cn(
-            "inline-flex items-center rounded-full px-3 py-1 text-sm font-medium",
-            incident.severity === 'CRITICAL' ? 'bg-red-500/10 text-red-500' :
-            incident.severity === 'HIGH' ? 'bg-orange-500/10 text-orange-500' :
-            'bg-blue-500/10 text-blue-500'
-          )}>
-            {incident.severity}
-          </span>
-          <button onClick={handleDelete} className="p-2 text-red-500 hover:bg-red-500/10 rounded-md transition-colors" title="Delete Incident">
+          <button 
+            onClick={handleDelete} 
+            className="p-2 text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 rounded-lg border border-transparent hover:border-rose-500/20 transition-colors" 
+            title="Delete Incident"
+          >
             <Trash2 className="h-4 w-4" />
           </button>
         </div>
       </div>
 
-      <div className="border-b border-zinc-800 mb-6">
+      <div className="border-b border-matrix-border mb-6">
         <nav className="-mb-px flex space-x-8">
-          <button
-            onClick={() => setActiveTab('overview')}
-            className={cn(
-              "whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors",
-              activeTab === 'overview'
-                ? "border-indigo-500 text-indigo-400"
-                : "border-transparent text-zinc-400 hover:text-zinc-300 hover:border-zinc-700"
-            )}
-          >
-            Overview
-          </button>
-          <button
-            onClick={() => setActiveTab('logs')}
-            className={cn(
-              "whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors",
-              activeTab === 'logs'
-                ? "border-indigo-500 text-indigo-400"
-                : "border-transparent text-zinc-400 hover:text-zinc-300 hover:border-zinc-700"
-            )}
-          >
-            Logs
-          </button>
-          <button
-            onClick={() => setActiveTab('repositories')}
-            className={cn(
-              "whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors",
-              activeTab === 'repositories'
-                ? "border-indigo-500 text-indigo-400"
-                : "border-transparent text-zinc-400 hover:text-zinc-300 hover:border-zinc-700"
-            )}
-          >
-            Repositories
-          </button>
-          <button
-            onClick={() => setActiveTab('documents')}
-            className={cn(
-              "whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors",
-              activeTab === 'documents'
-                ? "border-indigo-500 text-indigo-400"
-                : "border-transparent text-zinc-400 hover:text-zinc-300 hover:border-zinc-700"
-            )}
-          >
-            Documents
-          </button>
+          {[
+            { id: 'overview', label: 'Overview' },
+            { id: 'logs', label: 'Log Stream' },
+            { id: 'repositories', label: 'Repositories & Code' },
+            { id: 'documents', label: 'Runbooks & Fix Guides' },
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as any)}
+              className={cn(
+                "whitespace-nowrap pb-3.5 px-1 border-b-2 text-sm font-medium transition-all duration-200 font-mono",
+                activeTab === tab.id
+                  ? "border-emerald-400 text-emerald-300 font-semibold shadow-[0_1px_12px_rgba(16,185,129,0.35)]"
+                  : "border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-700"
+              )}
+            >
+              {tab.label}
+            </button>
+          ))}
         </nav>
       </div>
 
       {activeTab === 'overview' && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="md:col-span-2 space-y-6">
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6 shadow-sm">
-            <h2 className="text-lg font-medium text-zinc-100 mb-4">Description</h2>
-            <div className="prose prose-invert max-w-none text-zinc-300 whitespace-pre-wrap">
-              {incident.description}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            <div className="rounded-2xl border border-matrix-border bg-matrix-card/90 p-6 shadow-sm backdrop-blur">
+              <h2 className="text-base font-semibold text-slate-100 mb-3">Incident Summary</h2>
+              <div className="prose prose-invert max-w-none text-slate-300 text-sm whitespace-pre-wrap leading-relaxed">
+                {incident.description}
+              </div>
             </div>
+
+            {/* AI Investigation Area */}
+            {investigation ? (
+              <div className="mt-4">
+                <InvestigationPanel run={investigation} />
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-emerald-500/20 bg-emerald-950/10 p-8 shadow-matrix-glow-sm relative overflow-hidden backdrop-blur">
+                <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-emerald-400 to-teal-600"></div>
+                <div className="flex items-center gap-2.5 mb-4">
+                  <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
+                    <Terminal className="h-5 w-5 text-emerald-400" />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-semibold text-slate-100">Automated AI Investigation</h2>
+                    <p className="text-xs font-mono text-slate-400">Autonomous planning, multi-source evidence retrieval & verification</p>
+                  </div>
+                </div>
+                
+                <div className="rounded-xl border border-matrix-border bg-matrix-surface/80 p-8 text-center">
+                  <p className="text-sm text-slate-300">Ready to initiate full multi-vector investigation.</p>
+                  <p className="text-xs font-mono text-emerald-400/80 mt-2">
+                    Click the "Start Investigation" button above to launch the autonomous LangGraph agent.
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* AI Investigation Area */}
-          {investigation ? (
-            <div className="md:col-span-3 mt-4">
-              <InvestigationPanel run={investigation} />
-            </div>
-          ) : (
-            <div className="rounded-xl border border-indigo-900/30 bg-indigo-950/10 p-6 shadow-sm relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-1 h-full bg-indigo-600"></div>
-              <div className="flex items-center gap-2 mb-4">
-                <Terminal className="h-5 w-5 text-indigo-400" />
-                <h2 className="text-lg font-medium text-indigo-100">AI Investigation</h2>
-              </div>
-              
-              <div className="rounded-md border border-zinc-800 bg-zinc-950 p-6 text-center">
-                <p className="text-zinc-400">No investigation has been started for this incident.</p>
-                <p className="text-sm text-zinc-500 mt-2">Click the "Start Investigation" button above to launch the AI Agent.</p>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="space-y-6">
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6 shadow-sm">
-            <h3 className="text-sm font-medium text-zinc-100 mb-4 uppercase tracking-wider">Metadata</h3>
-            <div className="space-y-4 text-sm">
-              <div>
-                <span className="block text-zinc-500">ID</span>
-                <span className="font-mono text-zinc-300 break-all">{incident.id}</span>
-              </div>
-              <div>
-                <span className="block text-zinc-500">Last Updated</span>
-                <span className="text-zinc-300">{new Date(incident.updated_at).toLocaleString()}</span>
+          <div className="space-y-6">
+            <div className="rounded-2xl border border-matrix-border bg-matrix-card/90 p-6 shadow-sm backdrop-blur">
+              <h3 className="text-xs font-mono font-medium text-emerald-400 mb-4 uppercase tracking-wider flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                Incident Telemetry
+              </h3>
+              <div className="space-y-4 text-xs font-mono">
+                <div>
+                  <span className="block text-slate-500 mb-0.5">UUID</span>
+                  <span className="text-slate-300 select-all break-all bg-matrix-surface px-2 py-1 rounded border border-matrix-border block">{incident.id}</span>
+                </div>
+                <div>
+                  <span className="block text-slate-500 mb-0.5">Status</span>
+                  <span className="text-slate-200">{incident.status}</span>
+                </div>
+                <div>
+                  <span className="block text-slate-500 mb-0.5">Severity</span>
+                  <span className="text-slate-200">{incident.severity}</span>
+                </div>
+                <div>
+                  <span className="block text-slate-500 mb-0.5">Last Updated</span>
+                  <span className="text-slate-300">{new Date(incident.updated_at).toLocaleString()}</span>
+                </div>
               </div>
             </div>
-          </div>
           </div>
         </div>
       )}
@@ -238,7 +260,7 @@ const IncidentDetail = () => {
       )}
       
       {activeTab === 'documents' && (
-        <DocumentsTab incident={incident} apiBaseUrl="http://localhost:8000/api/v1" />
+        <DocumentsTab incident={incident} apiBaseUrl={import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1'} />
       )}
     </div>
   );

@@ -27,15 +27,19 @@ const LogsTab = ({ incidentId }: LogsTabProps) => {
     fetchLogs();
   }, [incidentId]);
 
-  if (loading) return <div className="p-8 text-center text-zinc-500">Loading logs...</div>;
-  if (error) return <div className="p-8 text-center text-red-500">{error}</div>;
+  if (loading) return (
+    <div className="flex h-48 items-center justify-center">
+      <div className="h-6 w-6 animate-spin rounded-full border-2 border-emerald-500/20 border-t-emerald-400"></div>
+    </div>
+  );
+  if (error) return <div className="p-4 text-xs font-mono text-rose-400 bg-rose-950/20 rounded-xl border border-rose-500/30">{error}</div>;
 
   return (
     <div className="space-y-4">
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 shadow-sm overflow-hidden">
+      <div className="rounded-2xl border border-matrix-border bg-matrix-card/95 shadow-sm overflow-hidden backdrop-blur">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left">
-            <thead className="text-xs text-zinc-400 uppercase bg-zinc-950/50 border-b border-zinc-800">
+          <table className="w-full text-sm text-left font-mono">
+            <thead className="text-[11px] text-slate-400 uppercase tracking-wider bg-matrix-surface/90 border-b border-matrix-border">
               <tr>
                 <th className="px-4 py-3">Time</th>
                 <th className="px-4 py-3">Level</th>
@@ -45,29 +49,31 @@ const LogsTab = ({ incidentId }: LogsTabProps) => {
                 <th className="px-4 py-3">Message</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-800/50">
+            <tbody className="divide-y divide-matrix-border">
               {logs.map((log) => (
-                <tr key={log.id} className="hover:bg-zinc-800/20 text-zinc-300 font-mono text-xs">
-                  <td className="px-4 py-2 whitespace-nowrap">{new Date(log.timestamp).toLocaleTimeString()}</td>
-                  <td className="px-4 py-2">
+                <tr key={log.id} className="hover:bg-matrix-surface/50 text-slate-300 text-xs transition-colors">
+                  <td className="px-4 py-2.5 whitespace-nowrap text-slate-500">{new Date(log.timestamp).toLocaleTimeString()}</td>
+                  <td className="px-4 py-2.5">
                     <span className={cn(
-                      "px-2 py-0.5 rounded text-[10px] font-medium",
-                      log.level === 'ERROR' || log.level === 'CRITICAL' ? 'bg-red-500/20 text-red-400' :
-                      log.level === 'WARN' ? 'bg-yellow-500/20 text-yellow-400' :
-                      'bg-blue-500/20 text-blue-400'
+                      "px-2 py-0.5 rounded text-[10px] font-medium border",
+                      log.level === 'ERROR' || log.level === 'CRITICAL' ? 'bg-rose-500/15 text-rose-400 border-rose-500/30' :
+                      log.level === 'WARN' ? 'bg-amber-500/15 text-amber-400 border-amber-500/30' :
+                      'bg-cyan-500/15 text-cyan-400 border-cyan-500/30'
                     )}>
                       {log.level}
                     </span>
                   </td>
-                  <td className="px-4 py-2 whitespace-nowrap">{log.service}</td>
-                  <td className="px-4 py-2 whitespace-nowrap">{log.endpoint || '-'}</td>
-                  <td className="px-4 py-2">{log.http_status || '-'}</td>
-                  <td className="px-4 py-2 truncate max-w-md" title={log.message}>{log.message}</td>
+                  <td className="px-4 py-2.5 whitespace-nowrap text-emerald-400 font-semibold">{log.service}</td>
+                  <td className="px-4 py-2.5 whitespace-nowrap text-slate-400">{log.endpoint || '-'}</td>
+                  <td className="px-4 py-2.5 text-slate-300">{log.http_status || '-'}</td>
+                  <td className="px-4 py-2.5 truncate max-w-md text-slate-300" title={log.message}>{log.message}</td>
                 </tr>
               ))}
               {logs.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-zinc-500">No logs found.</td>
+                  <td colSpan={6} className="px-4 py-12 text-center text-slate-500 text-xs">
+                    No log events recorded for this incident yet.
+                  </td>
                 </tr>
               )}
             </tbody>

@@ -23,7 +23,11 @@ services:
     environment:
       - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-incident_investigator}
       - APP_ENV=${APP_ENV:-development}
-      - CORS_ORIGINS=${CORS_ORIGINS:-["http://localhost:5180"]}
+      - CORS_ORIGINS=${CORS_ORIGINS:-["http://localhost:5180","http://localhost:5181","http://127.0.0.1:5180","http://127.0.0.1:5181","http://localhost:3000"]}
+      - LLM_API_KEY=${LLM_API_KEY:-MOCK_KEY}
+      - LLM_MODEL=${LLM_MODEL:-gemini-3.5-flash}
+      - EMBEDDING_MODEL=${EMBEDDING_MODEL:-gemini-embedding-2}
+      - REPOSITORY_ALLOWED_ROOT=/app/demo_repositories
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     depends_on:

@@ -15,7 +15,10 @@ async def get_investigation_hypotheses(run_id: str, db: AsyncSession = Depends(g
     result = await db.execute(
         select(Hypothesis)
         .where(Hypothesis.investigation_run_id == run_id)
-        .options(selectinload(Hypothesis.evidence_mappings).selectinload(HypothesisEvidence.evidence))
+        .options(
+            selectinload(Hypothesis.evidence_mappings).selectinload(HypothesisEvidence.evidence),
+            selectinload(Hypothesis.verifications)
+        )
         .order_by(Hypothesis.rank.asc())
     )
     hypotheses = result.scalars().all()
@@ -26,7 +29,10 @@ async def get_hypothesis(hypothesis_id: str, db: AsyncSession = Depends(get_db))
     result = await db.execute(
         select(Hypothesis)
         .where(Hypothesis.id == hypothesis_id)
-        .options(selectinload(Hypothesis.evidence_mappings).selectinload(HypothesisEvidence.evidence))
+        .options(
+            selectinload(Hypothesis.evidence_mappings).selectinload(HypothesisEvidence.evidence),
+            selectinload(Hypothesis.verifications)
+        )
     )
     hypothesis = result.scalars().first()
     if not hypothesis:

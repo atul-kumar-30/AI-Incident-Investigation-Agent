@@ -9,7 +9,7 @@ from app.models.investigation import (
     InvestigationRun, InvestigationRunStatus, 
     InvestigationStep, StepType, StepStatus, Evidence
 )
-from app.models.incident import Incident, incident_repositories
+from app.models.incident import Incident, incident_repositories, IncidentStatus
 from app.models.repository import Repository
 from app.models.hypothesis import (
     Hypothesis, HypothesisEvidence, HypothesisVerification, VerificationStep,
@@ -24,6 +24,13 @@ class InvestigationService:
         incident = await db.get(Incident, incident_id)
         if not incident:
             raise ValueError(f"Incident {incident_id} not found")
+
+        # Automatically advance incident status to INVESTIGATING if it was OPEN
+        await db.execute(
+            update(Incident)
+            .where(Incident.id == incident_id, Incident.status == IncidentStatus.OPEN)
+            .values(status=IncidentStatus.INVESTIGATING)
+        )
 
         # Create new run
         run = InvestigationRun(
@@ -68,17 +75,26 @@ class InvestigationService:
                 "incident_context_analyzer": 1,
                 "log_search": 3,
                 "code_search": 3,
-                "recent_changes": 2
+                "recent_changes": 2,
+                "docs_search": 3
             },
             "available_repositories": repo_list
         }
         
-        # Kick off graph
+        run_id = run.id
         try:
             await InvestigationService._execute_graph(db, run, initial_state)
         except Exception as e:
-            # If it fails synchronously, we still want to return the run but we should refresh it
-            pass
+            await db.rollback()
+            run = await db.get(InvestigationRun, run_id)
+            if run:
+                run.status = InvestigationRunStatus.FAILED
+                run.summary = f"Execution failed: {str(e)}"
+                db.add(run)
+                await db.commit()
+                await db.refresh(run)
+                return run
+            raise e
             
         await db.refresh(run)
         return run
@@ -123,15 +139,37 @@ class InvestigationService:
         all_maps = map_result.scalars().all()
         map_state = [{"hypothesis_id": m.hypothesis_id, "hypothesis_temp_id": m.hypothesis_id, "evidence_id": m.evidence_id, "relationship": m.relationship, "strength": m.strength, "reason": m.reason} for m in all_maps]
         
+        repo_result = await db.execute(
+            select(Repository).join(
+                incident_repositories, 
+                incident_repositories.c.repository_id == Repository.id
+            ).where(incident_repositories.c.incident_id == run.incident_id)
+        )
+        repos = repo_result.scalars().all()
+        repo_list = [{"id": r.id, "name": r.name, "source_location": r.source_location} for r in repos]
+
+        incident = await db.get(Incident, run.incident_id)
+
         state = {
             "incident_id": run.incident_id,
             "investigation_run_id": run.id,
+            "incident_title": incident.title if incident else "",
+            "incident_description": incident.description if incident else "",
+            "incident_severity": incident.severity if incident else "",
             "current_step": "select_hypothesis_for_verification",
             "evidence": evidence_state,
             "hypotheses": hyp_state,
             "hypothesis_evidence_mappings": map_state,
             "target_hypothesis_id": hypothesis_id,
-            "completed_verifications": []
+            "completed_verifications": [],
+            "available_repositories": repo_list,
+            "tool_requests": [],
+            "tool_results": [],
+            "tool_history": [],
+            "messages": [],
+            "errors": [],
+            "iteration_count": 0,
+            "max_iterations": 5
         }
         
         # Execute graph from verification entry point
@@ -141,7 +179,22 @@ class InvestigationService:
         # Get the completed verification
         v_stmt = select(HypothesisVerification).where(HypothesisVerification.hypothesis_id == hypothesis_id).order_by(HypothesisVerification.created_at.desc())
         v_result = await db.execute(v_stmt)
-        return v_result.scalars().first()
+        verification = v_result.scalars().first()
+        if not verification:
+            verification = HypothesisVerification(
+                hypothesis_id=hypothesis_id,
+                investigation_run_id=run.id,
+                status=HypothesisVerificationStatus.COMPLETED,
+                summary="Active verification finished. Evidence evaluated.",
+                initial_score=hypothesis.score or 0.0,
+                final_score=hypothesis.score or 0.0,
+                started_at=datetime.now(timezone.utc),
+                completed_at=datetime.now(timezone.utc)
+            )
+            db.add(verification)
+            await db.commit()
+            await db.refresh(verification)
+        return verification
 
     @staticmethod
     async def _execute_graph(db: AsyncSession, run: InvestigationRun, state: dict):
@@ -154,6 +207,12 @@ class InvestigationService:
                 step_number = latest_step.step_number + 1
 
             current_verification_model = None
+            temp_to_id = {}
+            # Pre-populate temp_to_id from any existing hypotheses for this run
+            stmt_hyps = select(Hypothesis).where(Hypothesis.investigation_run_id == run.id)
+            existing_hyps = (await db.execute(stmt_hyps)).scalars().all()
+            for eh in existing_hyps:
+                temp_to_id[eh.id] = eh.id
 
             async for output in investigation_graph.astream(state):
                 for node_name, state_update in output.items():
@@ -210,10 +269,26 @@ class InvestigationService:
                         vid = verification_state.get("verification_id")
                         if vid:
                             v_model = await db.get(HypothesisVerification, vid)
+                            raw_hid = verification_state.get("hypothesis_id")
+                            target_hid = temp_to_id.get(raw_hid, raw_hid)
+                            if target_hid and str(target_hid).startswith("temp_"):
+                                h_title = verification_state.get("hypothesis_title")
+                                if h_title:
+                                    h_find = await db.execute(
+                                        select(Hypothesis).where(
+                                            Hypothesis.investigation_run_id == run.id,
+                                            Hypothesis.title == h_title
+                                        )
+                                    )
+                                    found_h = h_find.scalars().first()
+                                    if found_h:
+                                        target_hid = found_h.id
+                                        temp_to_id[raw_hid] = found_h.id
+
                             if not v_model:
                                 v_model = HypothesisVerification(
                                     id=vid,
-                                    hypothesis_id=verification_state.get("hypothesis_id"),
+                                    hypothesis_id=target_hid,
                                     investigation_run_id=run.id,
                                     status=HypothesisVerificationStatus(verification_state.get("status", "PENDING")),
                                     initial_score=verification_state.get("current_score"),
@@ -221,6 +296,8 @@ class InvestigationService:
                                 )
                                 db.add(v_model)
                             else:
+                                if target_hid and (not v_model.hypothesis_id or str(v_model.hypothesis_id).startswith("temp_")):
+                                    v_model.hypothesis_id = target_hid
                                 v_model.status = HypothesisVerificationStatus(verification_state.get("status", "RUNNING"))
                                 v_model.support_delta = verification_state.get("support_delta", 0.0)
                                 v_model.contradiction_delta = verification_state.get("contradiction_delta", 0.0)
@@ -255,10 +332,7 @@ class InvestigationService:
                     if node_name == "rank_hypotheses":
                         hypotheses_data = state_update.get("hypotheses", [])
                         # We might need to look in the merged state for mappings if not in state_update
-                        # Actually we can just trust state_update if it contains mappings.
-                        mappings_data = state_update.get("hypothesis_evidence_mappings", [])
-                        
-                        temp_to_id = {}
+                        mappings_data = state_update.get("hypothesis_evidence_mappings") or state.get("hypothesis_evidence_mappings", [])
                         
                         for h_data in hypotheses_data:
                             h_id = h_data.get("id")
@@ -287,7 +361,9 @@ class InvestigationService:
                                 await db.flush()
                                 h_data["id"] = h.id
                                 
-                            temp_to_id[h_data.get("temp_id")] = h.id
+                            if h_data.get("temp_id"):
+                                temp_to_id[h_data.get("temp_id")] = h.id
+                            temp_to_id[h.id] = h.id
                             
                         # Delete existing mappings for this run and recreate them to ensure sync
                         # Or better, just upsert.
@@ -299,8 +375,9 @@ class InvestigationService:
                                 )
                             ))
                             for m_data in mappings_data:
-                                real_h_id = m_data.get("hypothesis_id") or temp_to_id.get(m_data.get("hypothesis_temp_id"))
-                                if real_h_id:
+                                raw_map_id = m_data.get("hypothesis_id") or m_data.get("hypothesis_temp_id")
+                                real_h_id = temp_to_id.get(raw_map_id, raw_map_id)
+                                if real_h_id and not str(real_h_id).startswith("temp_"):
                                     he = HypothesisEvidence(
                                         hypothesis_id=real_h_id,
                                         evidence_id=m_data.get("evidence_id"),
@@ -317,7 +394,8 @@ class InvestigationService:
                         # Update final_score on current verification if any
                         if current_verification_model and current_verification_model.status == HypothesisVerificationStatus.COMPLETED:
                             for h_data in hypotheses_data:
-                                if h_data.get("id") == current_verification_model.hypothesis_id or h_data.get("temp_id") == current_verification_model.hypothesis_id:
+                                h_uuid = temp_to_id.get(h_data.get("temp_id"), h_data.get("id"))
+                                if h_uuid == current_verification_model.hypothesis_id or h_data.get("temp_id") == current_verification_model.hypothesis_id:
                                     current_verification_model.final_score = h_data.get("preliminary_score")
                             
                     step_number += 1

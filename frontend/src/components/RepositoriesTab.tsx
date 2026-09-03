@@ -61,72 +61,76 @@ const RepositoriesTab: React.FC<RepositoriesTabProps> = ({ incidentId }) => {
   };
 
   return (
-    <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
-      <div className="p-4 border-b border-slate-200">
-        <h3 className="text-lg font-medium text-slate-900 mb-4">Code Repositories</h3>
+    <div className="bg-matrix-card/90 rounded-2xl border border-matrix-border overflow-hidden backdrop-blur shadow-sm">
+      <div className="p-6 border-b border-matrix-border">
+        <h3 className="text-base font-bold text-slate-100 mb-4 flex items-center gap-2 font-mono">
+          <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+          Code Repositories
+        </h3>
         
-        <form onSubmit={handleRegister} className="flex gap-4 items-end bg-slate-50 p-4 rounded-md border border-slate-200">
-          <div className="flex-1">
-            <label className="block text-sm font-medium text-slate-700 mb-1">Repository Name</label>
+        <form onSubmit={handleRegister} className="flex flex-col md:flex-row gap-4 items-end bg-matrix-surface/80 p-5 rounded-xl border border-matrix-border">
+          <div className="flex-1 w-full">
+            <label className="block text-xs font-mono text-slate-300 mb-1.5">Repository Identifier</label>
             <input 
               type="text" 
               value={repoName}
               onChange={e => setRepoName(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-              placeholder="e.g. backend-api"
+              className="w-full px-3 py-2 bg-matrix-bg border border-matrix-border rounded-lg text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/40 text-xs font-mono"
+              placeholder="e.g. auth-service"
             />
           </div>
-          <div className="flex-1">
-            <label className="block text-sm font-medium text-slate-700 mb-1">Local Path (Inside Container)</label>
+          <div className="flex-1 w-full">
+            <label className="block text-xs font-mono text-slate-300 mb-1.5">Container Mount Path</label>
             <input 
               type="text" 
               value={repoPath}
               onChange={e => setRepoPath(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-              placeholder="/app/demo_repositories/my-repo"
+              className="w-full px-3 py-2 bg-matrix-bg border border-matrix-border rounded-lg text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/40 text-xs font-mono"
+              placeholder="/app/demo_repositories/auth-service"
             />
           </div>
           <button 
             type="submit"
             disabled={loading || !repoName || !repoPath}
-            className="px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+            className="w-full md:w-auto px-5 py-2 text-xs font-semibold font-mono rounded-lg text-black bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 shadow-matrix-glow focus:outline-none disabled:opacity-50 transition-all whitespace-nowrap"
           >
-            Register & Index
+            {loading ? 'Indexing...' : 'Register & Index'}
           </button>
         </form>
-        {error && <div className="mt-2 text-sm text-red-600">{error}</div>}
+        {error && <div className="mt-3 text-xs font-mono text-rose-400 bg-rose-950/20 p-2.5 rounded-lg border border-rose-500/30">{error}</div>}
       </div>
       
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-slate-200">
-          <thead className="bg-slate-50">
+        <table className="min-w-full divide-y divide-matrix-border font-mono text-xs">
+          <thead className="bg-matrix-surface/90 text-[11px] uppercase tracking-wider text-slate-400 border-b border-matrix-border">
             <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Name</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Location</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Indexed At</th>
+              <th scope="col" className="px-6 py-3.5 text-left font-medium">Name</th>
+              <th scope="col" className="px-6 py-3.5 text-left font-medium">Location</th>
+              <th scope="col" className="px-6 py-3.5 text-left font-medium">Status</th>
+              <th scope="col" className="px-6 py-3.5 text-left font-medium">Indexed At</th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-slate-200">
+          <tbody className="divide-y divide-matrix-border">
             {repositories.length === 0 ? (
               <tr>
-                <td colSpan={4} className="px-6 py-4 text-center text-sm text-slate-500">
-                  No repositories registered.
+                <td colSpan={4} className="px-6 py-10 text-center text-xs text-slate-500">
+                  No repositories registered for this incident.
                 </td>
               </tr>
             ) : (
               repositories.map((repo) => (
-                <tr key={repo.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">{repo.name}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{repo.source_location}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                      ${repo.ingestion_status === 'READY' ? 'bg-green-100 text-green-800' : 
-                        repo.ingestion_status === 'FAILED' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                <tr key={repo.id} className="hover:bg-matrix-surface/50 transition-colors">
+                  <td className="px-6 py-4 whitespace-nowrap font-semibold text-emerald-400">{repo.name}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-slate-400">{repo.source_location}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2.5 py-0.5 inline-flex text-[10px] font-semibold rounded-full border
+                      ${repo.ingestion_status === 'READY' ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' : 
+                        repo.ingestion_status === 'FAILED' ? 'bg-rose-500/15 text-rose-400 border-rose-500/30' : 
+                        'bg-amber-500/15 text-amber-400 border-amber-500/30'}`}>
                       {repo.ingestion_status}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                  <td className="px-6 py-4 whitespace-nowrap text-slate-500">
                     {new Date(repo.updated_at).toLocaleString()}
                   </td>
                 </tr>

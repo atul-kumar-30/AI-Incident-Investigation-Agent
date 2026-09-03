@@ -11,13 +11,13 @@ Instead of sending an incident directly to an LLM and asking it to guess the roo
 | Category | Technologies |
 |---|---|
 | 🤖 **Agentic AI** | LangGraph, LangChain, LLM Structured Output, Tool Calling |
-| 🧠 **LLM** | Google Gemini |
+| 🧠 **LLM** | Google Gemini (Gemini 3.5 / 2.0 Flash) & Offline Deterministic Engine |
 | 🔍 **RAG & Retrieval** | Embeddings, Semantic Search, Lexical Search, Hybrid Retrieval |
 | 🗄️ **Vector Database** | PostgreSQL, pgvector |
 | ⚙️ **Backend** | Python 3.11, FastAPI, Pydantic v2, Uvicorn |
 | 💾 **Database & ORM** | PostgreSQL 15, SQLAlchemy 2.x Async |
 | 🔄 **Migrations** | Alembic |
-| 🎨 **Frontend** | React, TypeScript, Vite, Tailwind CSS |
+| 🎨 **Frontend** | React 18, TypeScript, Vite, Tailwind CSS (Stealth Matrix UI) |
 | 🐳 **Containerization** | Docker, Docker Compose |
 | 🧪 **Testing** | pytest, pytest-asyncio, Testcontainers |
 | 🌿 **Version Control** | Git |
@@ -479,22 +479,18 @@ Persistence enables:
 
 ## 🖥️ Frontend
 
-The React frontend provides an investigation-oriented interface with:
+The React frontend provides a responsive "Stealth Matrix" Command Center interface with:
 
-- Incident dashboard
-- Incident creation and management
-- Log inspection
-- Repository association
-- Document upload and indexing
-- Investigation execution
-- Investigation timeline
-- Evidence cards
-- Ranked hypothesis cards
-- Supporting and contradicting evidence
-- Manual hypothesis verification
-- Verification outcomes
-- Verification timeline
-- Score changes and re-ranking
+- **Operations Command Center Dashboard**: Real-time telemetry, click-to-filter stat cards (`TOTAL INCIDENTS`, `OPEN`, `INVESTIGATING`, `RESOLVED`, `CRITICAL`), and live incident search.
+- **Incident Lifecycle Management**: Status transitions (`OPEN` → `INVESTIGATING` → `RESOLVED` / `FAILED`), with automatic transition to `INVESTIGATING` upon agent execution.
+- **Multi-Tab Incident Room**:
+  - **Overview**: Live LangGraph step execution timeline, synthesized evidence cards, and ranked hypothesis cards.
+  - **Log Stream**: Structured runtime logs inspection filtered by service, level, HTTP status, and error messages.
+  - **Repositories & Code**: Codebase registration, chunk indexing, symbol search, and recent Git commit inspection.
+  - **Runbooks & Fix Guides**: Operational runbook, troubleshooting manual, and architecture guide management (PDF, Markdown, TXT) with interactive expandable reader view and semantic pgvector search.
+- **Hypothesis Cards & Evidence Scoring**: Deterministic evidence scores (`0–100`), support strength (`HIGH`, `MEDIUM`, `LOW`), source diversity badges, and leading candidate highlights.
+- **Active Verification Drawers**: On-demand hypothesis verification with expandable drawers displaying tested signals, score drift, and outcome badges (`SUPPORTED`, `WEAKENED`, `INCONCLUSIVE`).
+- **Persistence & Hot Reload**: State preserved across page refreshes; Docker polling enabled for seamless local development.
 
 ---
 
@@ -534,7 +530,16 @@ Copy-Item .env.example .env
 cp .env.example .env
 ```
 
-Add the required API key and configuration values to `.env`.
+Configure `.env` as needed:
+
+```env
+# Use MOCK_KEY for fast, deterministic offline testing without quota consumption:
+LLM_API_KEY=MOCK_KEY
+
+# Or paste your Google Gemini API key to enable live AI reasoning:
+# LLM_API_KEY=AIzaSyYourGeminiApiKeyHere
+LLM_MODEL=gemini-3.5-flash
+```
 
 > **Important:** Never commit API keys, credentials, or your real `.env` file to Git.
 
@@ -547,24 +552,34 @@ docker compose up -d --build
 Docker Compose starts the required application services, including:
 
 ```text
-PostgreSQL + pgvector
-FastAPI Backend
-React Frontend
+PostgreSQL + pgvector (port 5432)
+FastAPI Backend       (port 8000)
+React Frontend        (port 5180)
 ```
 
-### 4. Check Running Services
+### 4. Access the Application
+
+Once running, access the services in your browser:
+
+| Service | URL | Description |
+|---|---|---|
+| 🖥️ **Web Dashboard** | `http://localhost:5180` | Operations Command Center & Incident Rooms |
+| ⚙️ **Backend API** | `http://localhost:8000` | FastAPI REST API endpoints |
+| 📚 **Interactive API Docs** | `http://localhost:8000/docs` | Swagger UI for interactive API testing |
+
+### 5. Check Running Services
 
 ```bash
 docker compose ps
 ```
 
-### 5. View Container Logs
+### 6. View Container Logs
 
 ```bash
 docker compose logs -f
 ```
 
-### 6. Stop the Application
+### 7. Stop the Application
 
 ```bash
 docker compose down
@@ -702,6 +717,10 @@ INCONCLUSIVE
 ```
 
 rather than a fabricated conclusion.
+
+### Seamless API Resilience & Fallback
+
+When cloud model APIs encounter rate limits (such as Google AI Studio Free Tier 429 quota exhaustion) or upstream service spikes, the agent automatically and seamlessly falls back to the deterministic local engine, guaranteeing that investigations always finish without crashes or data loss.
 
 ---
 

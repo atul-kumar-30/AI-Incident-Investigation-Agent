@@ -3,12 +3,13 @@ from app.agents.investigation.state import InvestigationState
 from app.models.hypothesis import EvidenceRelationshipType
 from langchain_core.messages import HumanMessage
 
-def calculate_source_diversity_bonus(hypothesis_temp_id: str, mappings: list, evidence_lookup: dict) -> float:
+def calculate_source_diversity_bonus(h_ids: set, mappings: list, evidence_lookup: dict) -> float:
     """Calculates a bounded source diversity bonus"""
     supporting_sources = set()
     for m in mappings:
-        if m["hypothesis_temp_id"] == hypothesis_temp_id and m["relationship"] == EvidenceRelationshipType.SUPPORTS.value:
-            eid = m["evidence_id"]
+        m_ids = {m.get("hypothesis_id"), m.get("hypothesis_temp_id")} - {None}
+        if (m_ids & h_ids) and m.get("relationship") == EvidenceRelationshipType.SUPPORTS.value:
+            eid = m.get("evidence_id")
             if eid in evidence_lookup:
                 supporting_sources.add(evidence_lookup[eid].get("source_type"))
     
@@ -33,20 +34,21 @@ def rank_hypotheses(state: InvestigationState) -> Dict[str, Any]:
     
     # Score hypotheses
     for h in hypotheses:
-        temp_id = h.get("temp_id")
+        h_ids = {h.get("id"), h.get("temp_id")} - {None}
         
         support_score = 0.0
         contradiction_score = 0.0
         
         for m in mappings:
-            if m["hypothesis_temp_id"] == temp_id:
-                val = get_strength_value(m["strength"])
-                if m["relationship"] == EvidenceRelationshipType.SUPPORTS.value:
+            m_ids = {m.get("hypothesis_id"), m.get("hypothesis_temp_id")} - {None}
+            if m_ids & h_ids:
+                val = get_strength_value(m.get("strength"))
+                if m.get("relationship") == EvidenceRelationshipType.SUPPORTS.value:
                     support_score += val
-                elif m["relationship"] == EvidenceRelationshipType.CONTRADICTS.value:
+                elif m.get("relationship") == EvidenceRelationshipType.CONTRADICTS.value:
                     contradiction_score -= val
                     
-        diversity_bonus = calculate_source_diversity_bonus(temp_id, mappings, evidence_lookup)
+        diversity_bonus = calculate_source_diversity_bonus(h_ids, mappings, evidence_lookup)
         
         # Raw score
         h["support_score"] = support_score
@@ -58,7 +60,8 @@ def rank_hypotheses(state: InvestigationState) -> Dict[str, Any]:
     # Sort descending by raw_score
     # In case of tie, sort by number of supporting evidence
     def sort_key(h):
-        support_count = sum(1 for m in mappings if m["hypothesis_temp_id"] == h["temp_id"] and m["relationship"] == EvidenceRelationshipType.SUPPORTS.value)
+        hid = h.get("id") or h.get("temp_id")
+        support_count = sum(1 for m in mappings if (m.get("hypothesis_id") or m.get("hypothesis_temp_id")) == hid and m.get("relationship") == EvidenceRelationshipType.SUPPORTS.value)
         return (h["raw_score"], support_count)
         
     ranked_hypotheses = sorted(hypotheses, key=sort_key, reverse=True)
@@ -83,6 +86,7 @@ def rank_hypotheses(state: InvestigationState) -> Dict[str, Any]:
         
     return {
         "hypotheses": ranked_hypotheses,
+        "hypothesis_evidence_mappings": mappings,
         "current_step": "rank_hypotheses",
         "messages": [HumanMessage(content="\n".join(summary_parts))]
     }

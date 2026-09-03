@@ -31,30 +31,43 @@ const IncidentList = () => {
   }, [page]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">Incidents</h1>
-        <Link to="/incidents/new" className="inline-flex items-center justify-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow transition-colors hover:bg-indigo-700">
+        <div>
+          <h1 className="text-3xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-slate-100 via-slate-200 to-emerald-400">
+            Incident Log
+          </h1>
+          <p className="text-sm font-mono text-slate-400 mt-1">
+            Recorded production anomalies, outages, and agent investigations
+          </p>
+        </div>
+        <Link 
+          to="/incidents/new" 
+          className="inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-500 px-5 py-2.5 text-sm font-semibold text-black shadow-matrix-glow hover:from-emerald-400 hover:to-teal-400 transition-all duration-200"
+        >
           Report Incident
         </Link>
       </div>
 
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 shadow-sm overflow-hidden">
+      <div className="rounded-xl border border-matrix-border bg-matrix-card/90 shadow-sm overflow-hidden backdrop-blur">
         {loading && incidents.length === 0 ? (
           <div className="flex h-64 items-center justify-center">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-500 border-t-transparent"></div>
+            <div className="relative flex items-center justify-center">
+              <div className="h-10 w-10 animate-spin rounded-full border-2 border-emerald-500/20 border-t-emerald-400"></div>
+              <div className="absolute h-4 w-4 rounded-full bg-emerald-500/30 animate-ping"></div>
+            </div>
           </div>
         ) : error ? (
-          <div className="p-8 text-center text-red-500">{error}</div>
+          <div className="p-8 text-center text-rose-400 font-mono text-sm">{error}</div>
         ) : incidents.length === 0 ? (
-          <div className="p-12 text-center">
-            <h3 className="mt-2 text-sm font-semibold text-zinc-300">No incidents</h3>
-            <p className="mt-1 text-sm text-zinc-500">Get started by reporting a new incident.</p>
+          <div className="p-16 text-center">
+            <h3 className="text-base font-semibold text-slate-200">No incidents found</h3>
+            <p className="mt-1 text-sm font-mono text-slate-500">Get started by reporting a new incident.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm text-zinc-400">
-              <thead className="bg-zinc-900 text-xs uppercase text-zinc-500 border-b border-zinc-800">
+            <table className="w-full text-left text-sm text-slate-300">
+              <thead className="bg-matrix-surface/80 text-xs font-mono uppercase tracking-wider text-slate-400 border-b border-matrix-border">
                 <tr>
                   <th scope="col" className="px-6 py-4 font-medium">Title</th>
                   <th scope="col" className="px-6 py-4 font-medium">Status</th>
@@ -63,36 +76,36 @@ const IncidentList = () => {
                   <th scope="col" className="px-6 py-4 font-medium">Created</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-800">
+              <tbody className="divide-y divide-matrix-border">
                 {incidents.map((incident) => (
-                  <tr key={incident.id} className="hover:bg-zinc-800/50 transition-colors">
+                  <tr key={incident.id} className="hover:bg-matrix-surface/50 transition-colors group">
                     <td className="px-6 py-4">
-                      <Link to={`/incidents/${incident.id}`} className="font-medium text-indigo-400 hover:text-indigo-300">
+                      <Link to={`/incidents/${incident.id}`} className="font-semibold text-slate-200 group-hover:text-emerald-400 transition-colors">
                         {incident.title}
                       </Link>
                     </td>
                     <td className="px-6 py-4">
                       <span className={cn(
-                        "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
-                        incident.status === 'RESOLVED' ? 'bg-emerald-500/10 text-emerald-500' :
-                        incident.status === 'INVESTIGATING' ? 'bg-amber-500/10 text-amber-500' :
-                        'bg-rose-500/10 text-rose-500'
+                        "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-mono font-medium border",
+                        incident.status === 'RESOLVED' ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' :
+                        incident.status === 'INVESTIGATING' ? 'bg-amber-500/15 text-amber-400 border-amber-500/30' :
+                        'bg-rose-500/15 text-rose-400 border-rose-500/30'
                       )}>
                         {incident.status}
                       </span>
                     </td>
                     <td className="px-6 py-4">
                       <span className={cn(
-                        "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
-                        incident.severity === 'CRITICAL' ? 'bg-red-500/10 text-red-500' :
-                        incident.severity === 'HIGH' ? 'bg-orange-500/10 text-orange-500' :
-                        'bg-blue-500/10 text-blue-500'
+                        "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-mono font-medium border",
+                        incident.severity === 'CRITICAL' ? 'bg-rose-500/15 text-rose-400 border-rose-500/30' :
+                        incident.severity === 'HIGH' ? 'bg-amber-500/15 text-amber-400 border-amber-500/30' :
+                        'bg-slate-500/15 text-slate-400 border-slate-500/30'
                       )}>
                         {incident.severity}
                       </span>
                     </td>
-                    <td className="px-6 py-4">{incident.source}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">{new Date(incident.created_at).toLocaleString()}</td>
+                    <td className="px-6 py-4 font-mono text-xs text-slate-400">{incident.source}</td>
+                    <td className="px-6 py-4 whitespace-nowrap font-mono text-xs text-slate-500">{new Date(incident.created_at).toLocaleString()}</td>
                   </tr>
                 ))}
               </tbody>
@@ -100,22 +113,22 @@ const IncidentList = () => {
           </div>
         )}
         
-        {/* Basic Pagination Controls */}
-        <div className="flex items-center justify-between border-t border-zinc-800 px-6 py-3">
+        {/* Pagination Controls */}
+        <div className="flex items-center justify-between border-t border-matrix-border bg-matrix-surface/40 px-6 py-3">
           <button
             onClick={() => setPage(p => Math.max(0, p - 1))}
             disabled={page === 0 || loading}
-            className="rounded-md border border-zinc-700 px-3 py-1 text-sm text-zinc-300 hover:bg-zinc-800 disabled:opacity-50"
+            className="rounded-lg border border-matrix-border bg-matrix-card px-3.5 py-1.5 text-xs font-mono text-slate-300 hover:bg-emerald-500/10 hover:border-emerald-500/30 disabled:opacity-40 transition-colors"
           >
-            Previous
+            ← Previous
           </button>
-          <span className="text-sm text-zinc-500">Page {page + 1}</span>
+          <span className="text-xs font-mono text-slate-400">Page {page + 1}</span>
           <button
             onClick={() => setPage(p => p + 1)}
             disabled={incidents.length < limit || loading}
-            className="rounded-md border border-zinc-700 px-3 py-1 text-sm text-zinc-300 hover:bg-zinc-800 disabled:opacity-50"
+            className="rounded-lg border border-matrix-border bg-matrix-card px-3.5 py-1.5 text-xs font-mono text-slate-300 hover:bg-emerald-500/10 hover:border-emerald-500/30 disabled:opacity-40 transition-colors"
           >
-            Next
+            Next →
           </button>
         </div>
       </div>

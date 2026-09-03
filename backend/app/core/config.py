@@ -9,8 +9,8 @@ class Settings(BaseSettings):
     
     # LLM Configuration
     LLM_PROVIDER: str = "google"
-    LLM_MODEL: str = "gemini-3.5-flash-lite"
-    LLM_API_KEY: str = ""
+    LLM_MODEL: str = "gemini-2.0-flash"
+    LLM_API_KEY: str = "MOCK_KEY"
     LLM_TEMPERATURE: float = 0.0
     
     # Embedding Configuration
@@ -19,9 +19,14 @@ class Settings(BaseSettings):
     EMBEDDING_DIMENSION: int = 768
     
     # Phase 4
-    REPOSITORY_ALLOWED_ROOT: str = "/app/demo_repositories"
+    REPOSITORY_ALLOWED_ROOT: str = os.getenv(
+        "REPOSITORY_ALLOWED_ROOT", 
+        "/app/demo_repositories" if os.path.exists("/app/demo_repositories") 
+        else os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "demo_repositories"))
+    )
 
     class Config:
+        extra = "ignore"
         env_file = ".env"
         # In case we run from backend folder or root folder
         if os.path.exists("../.env"):
